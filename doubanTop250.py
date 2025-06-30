@@ -1,13 +1,15 @@
 import csv
 import time
-
 import requests
 from bs4 import BeautifulSoup
 import re
+import pandas as pd
 
 """
     获取豆瓣网页信息，
 """
+
+
 def getHtml(url):
     headers = {
         'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36'
@@ -22,6 +24,7 @@ def getHtml(url):
         return ""
 
 
+all_data = []
 """
     解析网页，定位相关电影信息
     电影名，评分，评论人数，发行年份，地区，类型，人员，名句
@@ -29,6 +32,7 @@ def getHtml(url):
 
 
 def getDatas(html):
+    global all_data
     soup = BeautifulSoup(html, 'html.parser')
     movie_list = soup.find_all('div', class_='item')
     for movie in movie_list:
@@ -60,27 +64,41 @@ def getDatas(html):
             else:
                 quote = ""
             data = [title, score, number_of_comment, year, area, types, person, quote]
-            saveToCSV(data)  # 存入CSV文件
+            # saveToCSV(data)
+            all_data.append(data)
             time.spleet(1)  # 防止爬取太快
         except:
             pass
 
+
 """
     将信息存入CSV文件
 """
+
+
 def saveToCSV(data):
-    with open('temp.csv', 'a', newline='', encoding='utf-8') as f:
+    with open('豆瓣Top250.csv', 'a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(data)
 
+"""
+    将信息存入excel文件
+"""
+def saveToExcel(allData):
+    df = pd.DataFrame(allData[1:], columns=allData[0])
+    df.to_excel('豆瓣Top250.xlsx', index=False)
+    print('保存成功')
+
 
 def main():
-    saveToCSV(['电影名','评分','评论人数','发行年份','地区','类型','人员','名句'])
+    # saveToCSV(['电影名', '评分', '评论人数', '发行年份', '地区', '类型', '人员', '名句'])
+    global all_data
+    all_data.append(['电影名', '评分', '评论人数', '发行年份', '地区', '类型', '人员', '名句'])
     for i in range(0, 250, 25):
         url = f"https://movie.douban.com/top250?start={i}"
         html = getHtml(url)
         getDatas(html)
-        print(i)
+    saveToExcel(all_data)
 
 
 if __name__ == '__main__':
